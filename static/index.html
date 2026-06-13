@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EmpathyBridge</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232736;
+    --border: #2e3148;
+    --accent: #7c6af7;
+    --accent2: #4ea8de;
+    --ai-bg: #1e1b35;
+    --ai-border: #5b4fcf;
+    --text: #e2e4f0;
+    --text-dim: #7a7f9a;
+    --user-a: #4ea8de;
+    --user-b: #56d4a0;
+    --danger: #e05c6a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; height: 100dvh; display: flex; flex-direction: column; }
+
+  /* ── Join screen ── */
+  #join-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; padding: 24px;
+  }
+  .brand { text-align: center; margin-bottom: 40px; }
+  .brand h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+  .brand h1 span { color: var(--accent); }
+  .brand p { color: var(--text-dim); margin-top: 8px; font-size: 0.95rem; line-height: 1.5; max-width: 360px; }
+  .join-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px; width: 100%; max-width: 420px;
+  }
+  .join-card h2 { font-size: 1.1rem; margin-bottom: 20px; color: var(--text-dim); font-weight: 500; }
+  label { display: block; font-size: 0.82rem; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  input {
+    width: 100%; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 0.95rem; outline: none; transition: border 0.15s;
+  }
+  input:focus { border-color: var(--accent); }
+  .field { margin-bottom: 16px; }
+  .room-row { display: flex; gap: 8px; }
+  .room-row input { flex: 1; }
+  button {
+    background: var(--accent); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 20px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.secondary { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); font-weight: 400; }
+  .btn-full { width: 100%; margin-top: 8px; }
+
+  /* ── Chat screen ── */
+  #chat-screen { display: none; flex-direction: column; height: 100dvh; }
+
+  /* Header */
+  .chat-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+  .chat-header .logo { font-weight: 700; font-size: 1.05rem; }
+  .chat-header .logo span { color: var(--accent); }
+  .room-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 12px; font-size: 0.8rem; color: var(--text-dim);
+    cursor: pointer; user-select: none;
+  }
+  .room-badge:hover { border-color: var(--accent); color: var(--text); }
+  .users-pill {
+    margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-dim);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); }
+  .dot.a { background: var(--user-a); }
+  .dot.b { background: var(--user-b); }
+
+  /* Messages */
+  .messages { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .msg-wrap { display: flex; flex-direction: column; max-width: 72%; }
+  .msg-wrap.me { align-self: flex-end; align-items: flex-end; }
+  .msg-wrap.other { align-self: flex-start; }
+  .msg-wrap.ai-wrap { align-self: center; max-width: 88%; width: 100%; }
+
+  .msg-name { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; font-weight: 500; }
+  .msg-name.color-a { color: var(--user-a); }
+  .msg-name.color-b { color: var(--user-b); }
+
+  .bubble {
+    padding: 10px 14px; border-radius: 16px; font-size: 0.92rem; line-height: 1.55;
+    word-break: break-word; white-space: pre-wrap;
+  }
+  .bubble.me { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble.other-a { background: var(--surface2); border: 1px solid #1e3a52; border-bottom-left-radius: 4px; }
+  .bubble.other-b { background: var(--surface2); border: 1px solid #1a3d30; border-bottom-left-radius: 4px; }
+
+  /* AI message */
+  .ai-card {
+    background: var(--ai-bg); border: 1px solid var(--ai-border);
+    border-radius: var(--radius); padding: 14px 18px; width: 100%;
+  }
+  .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .ai-icon {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .ai-label { font-size: 0.78rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  .ai-body { font-size: 0.9rem; line-height: 1.6; color: var(--text); }
+
+  /* System messages */
+  .sys-msg { text-align: center; font-size: 0.78rem; color: var(--text-dim); padding: 4px 0; }
+
+  /* Typing indicator */
+  .typing-indicator { display: none; align-self: center; }
+  .typing-indicator.show { display: flex; }
+  .typing-dots { display: flex; gap: 4px; padding: 10px 14px; background: var(--ai-bg); border: 1px solid var(--ai-border); border-radius: 20px; }
+  .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: 0.5; } 40% { transform: translateY(-6px); opacity: 1; } }
+
+  /* Input area */
+  .input-area {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 14px 16px; display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+  }
+  textarea {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 0.93rem; padding: 10px 14px;
+    resize: none; outline: none; max-height: 120px; line-height: 1.5; font-family: inherit;
+    transition: border 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  .send-btn { padding: 10px 16px; border-radius: 12px; flex-shrink: 0; }
+  .ai-btn { background: var(--surface2); border: 1px solid var(--ai-border); color: var(--accent); padding: 10px 14px; border-radius: 12px; flex-shrink: 0; font-size: 0.82rem; }
+  .ai-btn:hover { background: var(--ai-bg); }
+
+  /* Waiting screen overlay */
+  .waiting-banner {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 24px; margin: 0 16px; text-align: center; flex-shrink: 0;
+  }
+  .waiting-banner p { color: var(--text-dim); font-size: 0.9rem; }
+  .waiting-banner .room-code { font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; margin: 8px 0; cursor: pointer; }
+  .waiting-banner small { color: var(--text-dim); font-size: 0.78rem; }
+
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 20px; font-size: 0.85rem; color: var(--text-dim); opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── Join Screen ── -->
+<div id="join-screen">
+  <div class="brand">
+    <h1>Empathy<span>Bridge</span></h1>
+    <p>A space for real conversation — with an AI companion that helps you truly hear each other.</p>
+  </div>
+  <div class="join-card">
+    <h2>Start or join a conversation</h2>
+    <div class="field">
+      <label>Your name</label>
+      <input id="inp-name" type="text" placeholder="Alice" maxlength="30" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Room code</label>
+      <div class="room-row">
+        <input id="inp-room" type="text" placeholder="e.g. morning-talk" maxlength="40" autocomplete="off"/>
+        <button class="secondary" onclick="genRoom()">Random</button>
+      </div>
+    </div>
+    <button class="btn-full" onclick="joinRoom()">Enter Room</button>
+  </div>
+</div>
+
+<!-- ── Chat Screen ── -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <div class="logo">Empathy<span>Bridge</span></div>
+    <div class="room-badge" id="room-badge" onclick="copyRoom()" title="Click to copy invite link"></div>
+    <div class="users-pill" id="users-pill"></div>
+  </div>
+
+  <div id="waiting-area"></div>
+
+  <div class="messages" id="messages">
+    <div class="typing-indicator" id="typing-indicator">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <textarea id="msg-input" placeholder="Type your message…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="ai-btn" onclick="askAI()" title="Ask Bridge for a perspective">Bridge</button>
+    <button class="send-btn" onclick="sendMsg()">Send</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ws = null;
+let myName = '';
+let myRoom = '';
+let partnerName = '';
+let colorMe = 'a';
+let joinedUsers = [];
+
+const adjectives = ['calm','open','bright','kind','clear','soft','warm','wise','still','bold'];
+const nouns      = ['river','bridge','garden','dawn','tide','haven','ember','grove','shore','path'];
+function genRoom() {
+  const a = adjectives[Math.floor(Math.random()*adjectives.length)];
+  const n = nouns[Math.floor(Math.random()*nouns.length)];
+  document.getElementById('inp-room').value = `${a}-${n}`;
+}
+
+function joinRoom() {
+  const name = document.getElementById('inp-name').value.trim();
+  const room = document.getElementById('inp-room').value.trim().toLowerCase().replace(/\s+/g,'-');
+  if (!name) { showToast('Please enter your name'); return; }
+  if (!room)  { showToast('Please enter a room code'); return; }
+  myName = name;
+  myRoom = room;
+  connect();
+}
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/${encodeURIComponent(myRoom)}`);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'join', name: myName }));
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+
+  ws.onclose = () => {
+    addSystem('Connection closed. Reload to reconnect.');
+  };
+  ws.onerror = () => {
+    addSystem('Connection error.');
+  };
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'joined':
+      myName = msg.name;
+      myRoom = msg.room;
+      showChat();
+      joinedUsers = msg.users;
+      updateUsers(msg.users);
+      if (msg.users.length === 1) showWaiting();
+      break;
+    case 'message':
+      hideTyping();
+      addMessage(msg.sender, msg.text, msg.sender === myName);
+      if (joinedUsers.length < 2 && msg.sender !== myName) {
+        joinedUsers.push(msg.sender);
+        updateUsers(joinedUsers);
+      }
+      break;
+    case 'ai':
+      hideTyping();
+      addAI(msg.text);
+      break;
+    case 'system':
+      addSystem(msg.text);
+      if (msg.text.includes('joined')) {
+        const newUser = msg.text.replace(' joined the conversation.','');
+        if (!joinedUsers.includes(newUser)) joinedUsers.push(newUser);
+        updateUsers(joinedUsers);
+        hideWaiting();
+      }
+      break;
+    case 'user_left':
+      addSystem(msg.text);
+      joinedUsers = joinedUsers.filter(u => u !== msg.name);
+      updateUsers(joinedUsers);
+      if (joinedUsers.length < 2) showWaiting();
+      break;
+    case 'error':
+      showToast(msg.text);
+      break;
+  }
+}
+
+function showChat() {
+  document.getElementById('join-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'flex';
+  document.getElementById('room-badge').textContent = `Room: ${myRoom}`;
+}
+
+function showWaiting() {
+  const area = document.getElementById('waiting-area');
+  area.innerHTML = `
+    <div class="waiting-banner">
+      <p>Waiting for the other person…</p>
+      <div class="room-code" onclick="copyRoom()">${myRoom}</div>
+      <small>Share this room code with the person you want to talk to</small>
+    </div>`;
+}
+function hideWaiting() {
+  document.getElementById('waiting-area').innerHTML = '';
+}
+
+function updateUsers(users) {
+  const pill = document.getElementById('users-pill');
+  pill.innerHTML = '';
+  users.forEach((u, i) => {
+    const dot = document.createElement('div');
+    dot.className = `dot ${i === 0 ? 'a' : 'b'}`;
+    const span = document.createElement('span');
+    span.textContent = u;
+    pill.appendChild(dot);
+    pill.appendChild(span);
+    if (i < users.length - 1) {
+      const sep = document.createElement('span');
+      sep.textContent = '·';
+      sep.style.color = 'var(--border)';
+      pill.appendChild(sep);
+    }
+  });
+  // assign colors
+  const idx = users.indexOf(myName);
+  colorMe = idx === 0 ? 'a' : 'b';
+  partnerName = users.find(u => u !== myName) || '';
+}
+
+function userColor(sender) {
+  const idx = joinedUsers.indexOf(sender);
+  return idx === 0 ? 'a' : 'b';
+}
+
+function addMessage(sender, text, isMe) {
+  const messages = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${isMe ? 'me' : 'other'}`;
+
+  const nameEl = document.createElement('div');
+  const col = userColor(sender);
+  nameEl.className = `msg-name color-${col}`;
+  nameEl.textContent = isMe ? 'You' : sender;
+
+  const bubble = document.createElement('div');
+  bubble.className = isMe ? 'bubble me' : `bubble other-${col}`;
+  bubble.textContent = text;
+
+  wrap.appendChild(nameEl);
+  wrap.appendChild(bubble);
+  insertBeforeTyping(wrap);
+  scrollBottom();
+}
+
+function addAI(text) {
+  const messages = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ai-wrap';
+
+  const card = document.createElement('div');
+  card.className = 'ai-card';
+  card.innerHTML = `
+    <div class="ai-header">
+      <div class="ai-icon">B</div>
+      <div class="ai-label">Bridge — AI Insight</div>
+    </div>
+    <div class="ai-body">${escHtml(text)}</div>`;
+
+  wrap.appendChild(card);
+  insertBeforeTyping(wrap);
+  scrollBottom();
+}
+
+function addSystem(text) {
+  const el = document.createElement('div');
+  el.className = 'sys-msg';
+  el.textContent = text;
+  insertBeforeTyping(el);
+  scrollBottom();
+}
+
+function showTyping() {
+  document.getElementById('typing-indicator').classList.add('show');
+  scrollBottom();
+}
+function hideTyping() {
+  document.getElementById('typing-indicator').classList.remove('show');
+}
+
+function insertBeforeTyping(el) {
+  const messages = document.getElementById('messages');
+  const typing = document.getElementById('typing-indicator');
+  messages.insertBefore(el, typing);
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+function sendMsg() {
+  const ta = document.getElementById('msg-input');
+  const text = ta.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'message', text }));
+  ta.value = '';
+  ta.style.height = 'auto';
+  showTyping(); // Bridge might respond
+}
+
+function askAI() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'ask_ai' }));
+  showTyping();
+  showToast('Asking Bridge for a perspective…');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMsg();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function copyRoom() {
+  const url = `${location.origin}?room=${encodeURIComponent(myRoom)}`;
+  navigator.clipboard.writeText(url).then(() => showToast('Invite link copied!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// Pre-fill room from URL param
+window.onload = () => {
+  const params = new URLSearchParams(location.search);
+  if (params.has('room')) {
+    document.getElementById('inp-room').value = params.get('room');
+    document.getElementById('inp-name').focus();
+  } else {
+    genRoom();
+  }
+};
+</script>
+</body>
+</html>
