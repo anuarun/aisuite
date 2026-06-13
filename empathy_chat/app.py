@@ -1,5 +1,5 @@
 """
-EmpathyBridge — real-time two-person chat with an AI mediator.
+talk-good — real-time two-person chat with an AI mediator.
 
 Rooms:
   - Up to 2 human users per room
@@ -33,7 +33,7 @@ from fastapi.staticfiles import StaticFiles
 
 from empathy_chat.mediator import get_mediation, get_welcome, should_check
 
-app = FastAPI(title="EmpathyBridge")
+app = FastAPI(title="talk-good")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

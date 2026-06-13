@@ -2,7 +2,7 @@
 
 ## Overview
 
-This survey covers existing apps, academic research, and technical approaches for using AI to mediate conversations, build empathy, and help people understand each other's perspectives. It informed the design of **EmpathyBridge**.
+This survey covers existing apps, academic research, and technical approaches for using AI to mediate conversations, build empathy, and help people understand each other's perspectives. It informed the design of **talk-good**.
 
 ---
 
@@ -155,9 +155,9 @@ Key finding (Microsoft + Salesforce): 39% average performance drop in multi-turn
 
 ---
 
-## 6. Implications for EmpathyBridge Design
+## 6. Implications for talk-good Design
 
-Based on this survey, EmpathyBridge incorporates:
+Based on this survey, talk-good incorporates:
 
 1. **NVC framework** in the AI mediator's system prompt (observations → feelings → needs → requests)
 2. **Perspective-taking prompts** as a core intervention strategy
@@ -168,7 +168,7 @@ Based on this survey, EmpathyBridge incorporates:
 7. **Context window management**: Last 20 messages sent for mediation context
 8. **Warm but brief**: Interventions capped at 110 words; end with one open question
 
-### Gaps EmpathyBridge Acknowledges
+### Gaps talk-good Acknowledges
 - Text-only (no voice/tone detection)
 - No neurodiversity adaptation
 - No longitudinal memory across sessions
