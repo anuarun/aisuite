@@ -31,7 +31,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from empathy_chat.mediator import get_mediation, get_welcome, should_check
+from empathy_chat.mediator import get_mediation, get_welcome, should_check, _mock_mode
 
 app = FastAPI(title="talk-good")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -218,3 +218,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 @app.get("/")
 async def index():
     return FileResponse("static/index.html")
+
+
+@app.get("/api/status")
+async def status():
+    return {"mock_mode": _mock_mode}

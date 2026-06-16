@@ -12,10 +12,46 @@ Intervention principles:
 
 import os
 import json
+import random
 from typing import Optional
 import anthropic
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+_api_key = os.environ.get("ANTHROPIC_API_KEY")
+_mock_mode = not _api_key
+client = anthropic.Anthropic(api_key=_api_key) if not _mock_mode else None
+
+# ── Mock responses (used when no API key is set) ──────────────────────────────
+# Each entry is a template; {a} and {b} are replaced with the two user names.
+
+_MOCK_INTERVENTIONS = [
+    "It sounds like both {a} and {b} care a lot about being heard here. {a}, I noticed some frustration — what's the feeling underneath that? And {b}, what do you think {a} most needs from you right now?",
+    "Pausing here for a moment — {b}, when {a} said that, what did you hear? Sometimes what lands is different from what was meant. Is there anything you might have taken differently than {a} intended?",
+    "There's real investment in this conversation from both of you, which matters. {a}, can you try saying what you need — not what {b} did wrong, but what *you* need? That can open a different door.",
+    "I'm noticing this same point has come up a few times. That usually means something important isn't feeling acknowledged yet. {b}, what do you think {a} is trying to say underneath the words?",
+    "Both of you seem to want resolution — that's actually something you have in common. {a}, what would it look like for this conversation to go well? What would you need to feel from {b}?",
+    "It can be hard to stay curious when we feel misunderstood. {b}, before responding, could you reflect back what you heard {a} say — just to check you're on the same page?",
+    "Strong feelings are coming up, which usually means something important is at stake for both of you. {a} and {b} — what do you each *need* most from the other person right now, in one sentence?",
+]
+
+_MOCK_WELCOMES = [
+    "Hi {a} and {b}! I'm Bridge — I'll be listening quietly and occasionally offering a reflection or question to help you understand each other better. Speak honestly, and try to listen with curiosity. You've got this.",
+    "Welcome, {a} and {b}! I'm Bridge, your conversation companion. I won't take sides — I'm here to help each of you feel heard and help you see through each other's eyes. Start whenever you're ready.",
+]
+
+_intervention_index: dict[str, int] = {}
+
+
+def _mock_intervention(user_a: str, user_b: str, room_id: str = "") -> Optional[str]:
+    key = room_id or f"{user_a}-{user_b}"
+    idx = _intervention_index.get(key, random.randint(0, len(_MOCK_INTERVENTIONS) - 1))
+    msg = _MOCK_INTERVENTIONS[idx % len(_MOCK_INTERVENTIONS)]
+    _intervention_index[key] = idx + 1
+    return msg.replace("{a}", user_a).replace("{b}", user_b)
+
+
+def _mock_welcome(user_a: str, user_b: str) -> str:
+    msg = random.choice(_MOCK_WELCOMES)
+    return msg.replace("{a}", user_a).replace("{b}", user_b)
 
 MEDIATOR_SYSTEM_PROMPT = """You are an empathetic AI conversation mediator named "Bridge". You observe a real-time chat between two people who may be in conflict, struggling to understand each other, or working through a difficult topic together.
 
@@ -84,6 +120,9 @@ def get_mediation(
     if not history:
         return None
 
+    if _mock_mode:
+        return _mock_intervention(user_a_name, user_b_name)
+
     formatted = _format_history(history[-20:])  # last 20 messages for context
 
     user_prompt = f"""Participants:
@@ -122,6 +161,9 @@ Based on the conversation above, decide whether to intervene. Return valid JSON 
 
 def get_welcome(user_a_name: str, user_b_name: str) -> str:
     """Short welcome message when both users have joined."""
+    if _mock_mode:
+        return _mock_welcome(user_a_name, user_b_name)
+
     try:
         response = client.messages.create(
             model="claude-sonnet-4-6",

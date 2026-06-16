@@ -151,6 +151,11 @@
   .waiting-banner .room-code { font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; margin: 8px 0; cursor: pointer; }
   .waiting-banner small { color: var(--text-dim); font-size: 0.78rem; }
 
+  .demo-banner {
+    background: #2a2010; border-bottom: 1px solid #6b4c10;
+    padding: 6px 16px; text-align: center; font-size: 0.78rem; color: #d4a04a; flex-shrink: 0;
+  }
+
   .toast {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
     background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
@@ -193,6 +198,9 @@
     <div class="users-pill" id="users-pill"></div>
   </div>
 
+  <div id="demo-banner" style="display:none" class="demo-banner">
+    Demo mode — Bridge responses are pre-written samples. Add an <code>ANTHROPIC_API_KEY</code> to enable live AI.
+  </div>
   <div id="waiting-area"></div>
 
   <div class="messages" id="messages">
@@ -457,6 +465,11 @@ function showToast(msg) {
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
+
+// Check if running in demo mode
+fetch('/api/status').then(r => r.json()).then(d => {
+  if (d.mock_mode) document.getElementById('demo-banner').style.display = 'block';
+}).catch(() => {});
 
 // Pre-fill room from URL param
 window.onload = () => {
